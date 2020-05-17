@@ -20,6 +20,11 @@ func contains(xs []string, x string) bool {
 	return false
 }
 
+func validFlag(s string) bool {
+	l := strings.ToLower(s)
+	return l == "on" || l == "off"
+}
+
 // prepareIfArgs removes parentheses from an `if` directive's arguments.
 func prepareIfArgs(d Directive) Directive {
 	e := len(d.Args) - 1

@@ -12,6 +12,10 @@ var hasMagic = regexp.MustCompile(`[*?[]`)
 
 type blockCtx []string
 
+func (c blockCtx) key() string {
+	return strings.Join(c, ">")
+}
+
 type fileCtx struct {
 	path string
 	ctx  blockCtx
@@ -195,28 +199,24 @@ func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume 
 			stmt = prepareIfArgs(stmt)
 		}
 
-		// TODO: analysis
-		// 	// raise errors if this statement is invalid
-		// 	err := Analyze(
-		// 		fname=parsing.File, stmt=stmt, term=t.Value, ctx=ctx, strict=strict,
-		// 		check_ctx=check_ctx, check_args=check_args
-		// 	)
-		//
-		//  if perr, ok := err.(ParseError); ok && !options.StopParsingOnError {
-		// 		_handle_error(parsing, e)
-		// 		// if it was a block but shouldn"t have been then consume
-		// 		if strings.HasSuffix(err.what, " is not terminated by ";"") {
-		// 			if t.Value != "}" && !t.IsQuoted {
-		// 				p.parse(parsing, tokens, nil, true)
-		// 			} else {
-		// 				break
-		// 			}
-		// 		}
-		// 		// keep on parsin"
-		// 		continue
-		// 	} else if err != nil {
-		// 		return nil, err
-		// 	}
+		// raise errors if this statement is invalid
+		err := analyze(parsing.File, stmt, t.Value, ctx, p.options)
+
+		if perr, ok := err.(ParseError); ok && !p.options.StopParsingOnError {
+			p.handleError(parsing, perr)
+			// if it was a block but shouldn"t have been then consume
+			if strings.HasSuffix(perr.what, ` is not terminated by ";"`) {
+				if t.Value != "}" && !t.IsQuoted {
+					p.parse(parsing, tokens, nil, true)
+				} else {
+					break
+				}
+			}
+			// keep on parsin"
+			continue
+		} else if err != nil {
+			return nil, err
+		}
 
 		// add "includes" to the payload if this is an include statement
 		if !p.options.SingleFile && stmt.Directive == "include" {
