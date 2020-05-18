@@ -11,7 +11,7 @@ const (
 	ngxConfTake4  = 0x00000010 // 4 args
 	ngxConfTake5  = 0x00000020 // 5 args
 	ngxConfTake6  = 0x00000040 // 6 args
-	ngxConfTake7  = 0x00000080 // 7 args
+	// ngxConfTake7  = 0x00000080 // 7 args (currently unused)
 	ngxConfBlock  = 0x00000100 // followed by block
 	ngxConfFlag   = 0x00000200 // 'on' or 'off'
 	ngxConfAny    = 0x00000400 // >=0 args
@@ -20,7 +20,7 @@ const (
 
 	// some helpful argument style aliases
 	ngxConfTake12   = (ngxConfTake1 | ngxConfTake2)
-	ngxConfTake13   = (ngxConfTake1 | ngxConfTake3)
+	//ngxConfTake13   = (ngxConfTake1 | ngxConfTake3) (currently unused)
 	ngxConfTake23   = (ngxConfTake2 | ngxConfTake3)
 	ngxConfTake34   = (ngxConfTake3 | ngxConfTake4)
 	ngxConfTake123  = (ngxConfTake12 | ngxConfTake3)

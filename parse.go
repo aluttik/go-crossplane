@@ -155,7 +155,7 @@ func (p *parser) parse(parsing *Config, tokens chan Token, ctx blockCtx, consume
 		if consume {
 			// if we find a block inside this context, consume it too
 			if t.Value == "{" && !t.IsQuoted {
-				p.parse(parsing, tokens, nil, true)
+				_, _ = p.parse(parsing, tokens, nil, true)
 			}
 			continue
 		}
@@ -194,7 +194,7 @@ func (p *parser) parse(parsing *Config, tokens chan Token, ctx blockCtx, consume
 		if contains(p.options.IgnoreDirectives, stmt.Directive) {
 			// if this directive was a block consume it too
 			if t.Value == "{" && !t.IsQuoted {
-				p.parse(parsing, tokens, nil, true)
+				_, _ = p.parse(parsing, tokens, nil, true)
 			}
 			continue
 		}
@@ -212,7 +212,7 @@ func (p *parser) parse(parsing *Config, tokens chan Token, ctx blockCtx, consume
 			// if it was a block but shouldn"t have been then consume
 			if strings.HasSuffix(perr.what, ` is not terminated by ";"`) {
 				if t.Value != "}" && !t.IsQuoted {
-					p.parse(parsing, tokens, nil, true)
+					_, _ = p.parse(parsing, tokens, nil, true)
 				} else {
 					break
 				}

@@ -1,9 +1,6 @@
 package crossplane
 
-import "regexp"
-
-var escapeRegex = regexp.MustCompile(`(\\x[0-9a-f]{2}|\\[0-7]{1,3})`)
-
+/*
 func escape(s string) chan string {
 	c := make(chan string)
 	go func() {
@@ -61,8 +58,6 @@ func needsQuotes(s string) bool {
 
 	return expanding || char == "\\" || char == "$"
 }
-
-/*
 
 def _replace_escape_sequences(match):
     return match.group(1).decode('string-escape')

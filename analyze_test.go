@@ -33,7 +33,7 @@ func TestAnalyze(t *testing.T) {
 			goodMap[c.key()] = true
 		}
 
-		for key, _ := range contexts {
+		for key := range contexts {
 			// the state directive should only be in the "good" contexts
 			if _, ok := goodMap[key]; !ok {
 				ctx := blockCtx(strings.Split(key, ">"))
