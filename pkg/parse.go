@@ -24,7 +24,7 @@ type fileCtx struct {
 type parser struct {
 	configDir   string
 	options     *ParseOptions
-	handleError func(Config, error)
+	handleError func(*Config, error)
 	includes    []fileCtx
 	included    map[string]int
 }
@@ -73,7 +73,7 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 		Config: []Config{},
 	}
 
-	handleError := func(config Config, err error) {
+	handleError := func(config *Config, err error) {
 		var line *int
 		if e, ok := err.(ParseError); ok {
 			line = e.line
@@ -101,27 +101,30 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 		included:    map[string]int{filename: 0},
 	}
 
-	for _, incl := range p.includes {
+	for len(p.includes) > 0 {
+		incl := p.includes[0]
+		p.includes = p.includes[1:]
+
 		file, err := os.Open(incl.path)
 		if err != nil {
 			return nil, err
 		}
 
 		tokens := Lex(file)
-		parsing := Config{
+		config := Config{
 			File:   incl.path,
 			Status: "ok",
 			Errors: []ConfigError{},
 			Parsed: []Directive{},
 		}
-		parsed, err := p.parse(parsing, tokens, incl.ctx, false)
+		parsed, err := p.parse(&config, tokens, incl.ctx, false)
 		if err != nil {
-			handleError(parsing, err)
+			handleError(&config, err)
 		} else {
-			parsing.Parsed = parsed
+			config.Parsed = parsed
 		}
 
-		payload.Config = append(payload.Config, parsing)
+		payload.Config = append(payload.Config, config)
 	}
 
 	if options.CombineConfigs {
@@ -132,7 +135,7 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 }
 
 // parse Recursively parses directives from an nginx config context.
-func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume bool) ([]Directive, error) {
+func (p *parser) parse(parsing *Config, tokens chan Token, ctx blockCtx, consume bool) ([]Directive, error) {
 	parsed := []Directive{}
 
 	// parse recursively by pulling from a flat stream of tokens
@@ -153,12 +156,10 @@ func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume 
 			continue
 		}
 
-		// the first token should always be an nginx directive
-		directive := t.Value
-
 		// TODO: add a "File" key if combine is true
+		// the first token should always be an nginx directive
 		stmt := Directive{
-			Directive: directive,
+			Directive: t.Value,
 			Line:      t.Line,
 			Args:      []string{},
 		}
@@ -212,7 +213,7 @@ func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume 
 					break
 				}
 			}
-			// keep on parsin"
+			// keep on parsin'
 			continue
 		} else if err != nil {
 			return nil, err
@@ -230,7 +231,7 @@ func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume 
 			// get names of all included files
 			var fnames []string
 			if hasMagic.MatchString(pattern) {
-				fnames, err := filepath.Glob(pattern)
+				fnames, err = filepath.Glob(pattern)
 				if err != nil {
 					return nil, err
 				}
@@ -259,7 +260,7 @@ func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume 
 				// the included set keeps files from being parsed twice
 				// TODO: handle files included from multiple contexts
 				if _, ok := p.included[fname]; !ok {
-					p.included[fname] = len(p.includes)
+					p.included[fname] = len(p.included)
 					p.includes = append(p.includes, fileCtx{fname, ctx})
 				}
 				*stmt.Includes = append(*stmt.Includes, p.included[fname])
@@ -280,6 +281,7 @@ func (p *parser) parse(parsing Config, tokens chan Token, ctx blockCtx, consume 
 
 		// add all comments found inside args after stmt is added
 		for _, comment := range commentsInArgs {
+			comment := comment
 			parsed = append(parsed, Directive{
 				Directive: "#",
 				Line:      stmt.Line,

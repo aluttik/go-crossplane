@@ -47,6 +47,16 @@ func CombineParsedConfigs(old Payload) (*Payload, error) {
 		return &old, nil
 	}
 
+	status := old.Status
+	if status == "" {
+		status = "ok"
+	}
+
+	errors := old.Errors
+	if errors == nil {
+		errors = []PayloadError{}
+	}
+
 	combined := Config{
 		File:   old.Config[0].File,
 		Status: "ok",
@@ -68,13 +78,11 @@ func CombineParsedConfigs(old Payload) (*Payload, error) {
 		combined.Parsed = append(combined.Parsed, incl.directive)
 	}
 
-	result := Payload{
-		Status: old.Status,
-		Errors: old.Errors,
+	return &Payload{
+		Status: status,
+		Errors: errors,
 		Config: []Config{combined},
-	}
-
-	return &result, nil
+	}, nil
 }
 
 func performIncludes(old Payload, fromfile string, block []Directive) chan included {
@@ -84,7 +92,7 @@ func performIncludes(old Payload, fromfile string, block []Directive) chan inclu
 
 		for _, dir := range block {
 			if dir.IsBlock() {
-				var block []Directive
+				block := []Directive{}
 				for incl := range performIncludes(old, fromfile, *dir.Block) {
 					if incl.err != nil {
 						c <- incl
