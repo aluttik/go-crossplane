@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type Token struct {
+type ngxToken struct {
 	Value    string
 	Line     int
 	IsQuoted bool
@@ -18,13 +18,12 @@ type charLine struct {
 	line int
 }
 
-//
-func Lex(reader io.Reader) chan Token {
-	return balanceBraces(lex(reader))
+func lex(reader io.Reader) chan ngxToken {
+	return balanceBraces(tokenize(reader))
 }
 
-func balanceBraces(tokens chan Token) chan Token {
-	c := make(chan Token)
+func balanceBraces(tokens chan ngxToken) chan ngxToken {
+	c := make(chan ngxToken)
 
 	go func() {
 		depth := 0
@@ -39,7 +38,7 @@ func balanceBraces(tokens chan Token) chan Token {
 
 			// raise error if we ever have more right braces than left
 			if depth < 0 {
-				c <- Token{
+				c <- ngxToken{
 					Error: ParseError{
 						what: `unexpected "}"`,
 						line: &line,
@@ -53,7 +52,7 @@ func balanceBraces(tokens chan Token) chan Token {
 
 		// raise error if we have less right braces than left at EOF
 		if depth > 0 {
-			c <- Token{
+			c <- ngxToken{
 				Error: ParseError{
 					what: `unexpected end of file, expecting "}"`,
 					line: &line,
@@ -67,8 +66,8 @@ func balanceBraces(tokens chan Token) chan Token {
 	return c
 }
 
-func lex(reader io.Reader) chan Token {
-	c := make(chan Token)
+func tokenize(reader io.Reader) chan ngxToken {
+	c := make(chan ngxToken)
 
 	go func() {
 		var ok bool
@@ -82,7 +81,7 @@ func lex(reader io.Reader) chan Token {
 			if isSpace(cl.char) {
 				// if token complete yield it and reset token buffer
 				if len(token) > 0 {
-					c <- Token{Value: token, Line: tokenLine, IsQuoted: false}
+					c <- ngxToken{Value: token, Line: tokenLine, IsQuoted: false}
 					token = ""
 				}
 				// disregard until char isn't a whitespace character
@@ -102,7 +101,7 @@ func lex(reader io.Reader) chan Token {
 						break
 					}
 				}
-				c <- Token{Value: token, Line: lineAtStart, IsQuoted: false}
+				c <- ngxToken{Value: token, Line: lineAtStart, IsQuoted: false}
 				token = ""
 				continue
 			}
@@ -145,7 +144,7 @@ func lex(reader io.Reader) chan Token {
 				}
 
 				// True because this is in quotes
-				c <- Token{Value: token, Line: tokenLine, IsQuoted: true}
+				c <- ngxToken{Value: token, Line: tokenLine, IsQuoted: true}
 				token = ""
 				continue
 			}
@@ -154,12 +153,12 @@ func lex(reader io.Reader) chan Token {
 			if cl.char == "{" || cl.char == "}" || cl.char == ";" {
 				// if token complete yield it and reset token buffer
 				if len(token) > 0 {
-					c <- Token{Value: token, Line: tokenLine, IsQuoted: false}
+					c <- ngxToken{Value: token, Line: tokenLine, IsQuoted: false}
 					token = ""
 				}
 
 				// this character is a full token so yield it now
-				c <- Token{Value: cl.char, Line: cl.line, IsQuoted: false}
+				c <- ngxToken{Value: cl.char, Line: cl.line, IsQuoted: false}
 				continue
 			}
 
@@ -168,7 +167,7 @@ func lex(reader io.Reader) chan Token {
 		}
 
 		if token != "" {
-			c <- Token{Value: token, Line: tokenLine, IsQuoted: false}
+			c <- ngxToken{Value: token, Line: tokenLine, IsQuoted: false}
 		}
 
 		close(c)
@@ -227,8 +226,4 @@ func escapeChars(chars chan string) chan string {
 	}()
 
 	return c
-}
-
-func isSpace(s string) bool {
-	return len(strings.TrimSpace(s)) == 0
 }

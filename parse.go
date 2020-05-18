@@ -110,7 +110,7 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 			return nil, err
 		}
 
-		tokens := Lex(file)
+		tokens := lex(file)
 		config := Config{
 			File:   incl.path,
 			Status: "ok",
@@ -134,16 +134,16 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 	return &payload, nil
 }
 
-func (p Payload) Combined() (*Payload, error) {
-	return combineConfigs(p)
-}
-
 // parse Recursively parses directives from an nginx config context.
-func (p *parser) parse(parsing *Config, tokens chan Token, ctx blockCtx, consume bool) ([]Directive, error) {
+func (p *parser) parse(parsing *Config, tokens chan ngxToken, ctx blockCtx, consume bool) ([]Directive, error) {
 	parsed := []Directive{}
 
 	// parse recursively by pulling from a flat stream of tokens
 	for t := range tokens {
+		if t.Error != nil {
+			return nil, t.Error
+		}
+
 		commentsInArgs := []string{}
 
 		// we are parsing a block, so break if it's closing

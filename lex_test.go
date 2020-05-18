@@ -229,7 +229,7 @@ func TestLex(t *testing.T) {
 			}
 			defer file.Close()
 			i := 0
-			for token := range Lex(file) {
+			for token := range lex(file) {
 				expected := fixture.tokens[i]
 				if token.Value != expected.value || token.Line != expected.line {
 					t.Fatalf("expected (%q,%d) but got (%q,%d)", expected.value, expected.line, token.Value, token.Line)

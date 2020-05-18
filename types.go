@@ -34,14 +34,24 @@ type Directive struct {
 	Comment   *string      `json:"comment,omitempty"`
 }
 
+// IsBlock returns true if this is a block directive.
 func (d Directive) IsBlock() bool {
 	return d.Block != nil
 }
 
+// IsInclude returns true if this is an include directive.
 func (d Directive) IsInclude() bool {
-	return d.Includes != nil
+	return d.Directive == "include" && d.Includes != nil
 }
 
+// IsComment returns true iff the directive represents a comment.
 func (d Directive) IsComment() bool {
-	return d.Comment != nil
+	return d.Directive == "#" && d.Comment != nil
+}
+
+// Combined returns a new Payload that is the same except that the inluding
+// logic is performed on its configs. This means that the resulting Payload
+// will always have 0 or 1 configs in its Config field.
+func (p Payload) Combined() (*Payload, error) {
+	return combineConfigs(p)
 }

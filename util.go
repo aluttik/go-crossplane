@@ -20,6 +20,23 @@ func contains(xs []string, x string) bool {
 	return false
 }
 
+func isSpace(s string) bool {
+	return len(strings.TrimSpace(s)) == 0
+}
+
+func repr(s string) string {
+	q := fmt.Sprintf("%q", s)
+	for _, char := range s {
+		if char == '"' {
+			q = strings.ReplaceAll(q, `\"`, `"`)
+			q = strings.ReplaceAll(q, `'`, `\'`)
+			q = `'` + q[1:len(q)-1] + `'`
+			return q
+		}
+	}
+	return q
+}
+
 func validFlag(s string) bool {
 	l := strings.ToLower(s)
 	return l == "on" || l == "off"
