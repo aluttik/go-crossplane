@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -22,6 +23,13 @@ func pStr(s string) *string {
 	return &s
 }
 
+func noSuchFileErrMsg() string {
+	if runtime.GOOS == "windows" {
+		return "The system cannot find the file specified."
+	}
+	return "no such file or directory"
+}
+
 var parseFixtures = []parseFixture{
 	parseFixture{"includes-regular", "", ParseOptions{}, Payload{
 		Status: "failed",
@@ -29,8 +37,9 @@ var parseFixtures = []parseFixture{
 			PayloadError{
 				File: filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
 				Error: fmt.Sprintf(
-					"open %s: no such file or directory in %s:5",
+					"open %s: %s in %s:5",
 					filepath.Join("testdata", "includes-regular", "bar.conf"),
+					noSuchFileErrMsg(),
 					filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
 				),
 				Line: pInt(5),
@@ -69,8 +78,9 @@ var parseFixtures = []parseFixture{
 				Errors: []ConfigError{
 					ConfigError{
 						Error: fmt.Sprintf(
-							"open %s: no such file or directory in %s:5",
+							"open %s: %s in %s:5",
 							filepath.Join("testdata", "includes-regular", "bar.conf"),
+							noSuchFileErrMsg(),
 							filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
 						),
 						Line: pInt(5),
