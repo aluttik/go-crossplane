@@ -41,8 +41,8 @@ func prepareIfArgs(d Directive) Directive {
 	return d
 }
 
-// CombineParsedConfigs combines config files into one by using include directives.
-func CombineParsedConfigs(old Payload) (*Payload, error) {
+// combineConfigs combines config files into one by using include directives.
+func combineConfigs(old Payload) (*Payload, error) {
 	if len(old.Config) < 1 {
 		return &old, nil
 	}

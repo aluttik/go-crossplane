@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	crossplane "github.com/aluttik/crossplane/pkg"
+	crossplane "github.com/aluttik/go-crossplane"
 )
 
 func main() {

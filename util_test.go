@@ -2,13 +2,12 @@ package crossplane
 
 import (
 	"encoding/json"
-	"log"
 	"testing"
 )
 
-func TestUtil(t *testing.T) {
+func TestPayload(t *testing.T) {
 	t.Run("combine", func(t *testing.T) {
-		combined, err := CombineParsedConfigs(Payload{
+		payload := Payload{
 			Config: []Config{
 				Config{
 					File: "example1.conf",
@@ -39,9 +38,6 @@ func TestUtil(t *testing.T) {
 					},
 				},
 			},
-		})
-		if err != nil {
-			t.Fatal(err)
 		}
 		expected := Payload{
 			Status: "ok",
@@ -68,10 +64,14 @@ func TestUtil(t *testing.T) {
 				},
 			},
 		}
+		combined, err := payload.Combined()
+		if err != nil {
+			t.Fatal(err)
+		}
 		b1, _ := json.Marshal(expected)
 		b2, _ := json.Marshal(*combined)
 		if string(b1) != string(b2) {
-			log.Fatalf("expected: %s\nbut got: %s", b1, b2)
+			t.Fatalf("expected: %s\nbut got: %s", b1, b2)
 		}
 	})
 }

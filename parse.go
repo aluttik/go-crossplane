@@ -128,10 +128,14 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 	}
 
 	if options.CombineConfigs {
-		return CombineParsedConfigs(payload)
+		return payload.Combined()
 	}
 
 	return &payload, nil
+}
+
+func (p Payload) Combined() (*Payload, error) {
+	return combineConfigs(p)
 }
 
 // parse Recursively parses directives from an nginx config context.

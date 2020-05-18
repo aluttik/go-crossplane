@@ -1,11 +1,9 @@
-package crossplane_test
+package crossplane
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	crossplane "github.com/aluttik/crossplane/pkg"
 )
 
 type tokenLine struct {
@@ -224,14 +222,14 @@ var lexFixtures = []lexFixture{
 func TestLex(t *testing.T) {
 	for _, fixture := range lexFixtures {
 		t.Run(fixture.name, func(t *testing.T) {
-			path := filepath.Join("../test/testdata", fixture.name, "nginx.conf")
+			path := filepath.Join("testdata", fixture.name, "nginx.conf")
 			file, err := os.Open(path)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer file.Close()
 			i := 0
-			for token := range crossplane.Lex(file) {
+			for token := range Lex(file) {
 				expected := fixture.tokens[i]
 				if token.Value != expected.value || token.Line != expected.line {
 					t.Fatalf("expected (%q,%d) but got (%q,%d)", expected.value, expected.line, token.Value, token.Line)

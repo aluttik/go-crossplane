@@ -2,7 +2,7 @@ package crossplane
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -27,14 +27,18 @@ var parseFixtures = []parseFixture{
 		Status: "failed",
 		Errors: []PayloadError{
 			PayloadError{
-				File:  "../test/testdata/includes-regular/conf.d/server.conf",
-				Error: "open ../test/testdata/includes-regular/bar.conf: no such file or directory in ../test/testdata/includes-regular/conf.d/server.conf:5",
-				Line:  pInt(5),
+				File: filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
+				Error: fmt.Sprintf(
+					"open %s: no such file or directory in %s:5",
+					filepath.Join("testdata", "includes-regular", "bar.conf"),
+					filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
+				),
+				Line: pInt(5),
 			},
 		},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/includes-regular/nginx.conf",
+				File:   filepath.Join("testdata", "includes-regular", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -60,12 +64,16 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-regular/conf.d/server.conf",
+				File:   filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
 				Status: "failed",
 				Errors: []ConfigError{
 					ConfigError{
-						Error: "open ../test/testdata/includes-regular/bar.conf: no such file or directory in ../test/testdata/includes-regular/conf.d/server.conf:5",
-						Line:  pInt(5),
+						Error: fmt.Sprintf(
+							"open %s: no such file or directory in %s:5",
+							filepath.Join("testdata", "includes-regular", "bar.conf"),
+							filepath.Join("testdata", "includes-regular", "conf.d", "server.conf"),
+						),
+						Line: pInt(5),
 					},
 				},
 				Parsed: []Directive{
@@ -101,7 +109,7 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-regular/foo.conf",
+				File:   filepath.Join("testdata", "includes-regular", "foo.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -126,7 +134,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/includes-regular/nginx.conf",
+				File:   filepath.Join("testdata", "includes-regular", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -159,7 +167,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/includes-globbed/nginx.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -178,7 +186,7 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-globbed/http.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "http.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -198,7 +206,7 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-globbed/servers/server1.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "servers", "server1.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -223,7 +231,7 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-globbed/servers/server2.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "servers", "server2.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -248,7 +256,7 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-globbed/locations/location1.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "locations", "location1.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -267,7 +275,7 @@ var parseFixtures = []parseFixture{
 				},
 			},
 			Config{
-				File:   "../test/testdata/includes-globbed/locations/location2.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "locations", "location2.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -292,7 +300,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/includes-globbed/nginx.conf",
+				File:   filepath.Join("testdata", "includes-globbed", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -373,8 +381,7 @@ var parseFixtures = []parseFixture{
 											Directive{
 												Directive: "return",
 												Args:      []string{"200", "bar"},
-												// File:      "../test/testdata//locations/location2.conf",
-												Line: 2,
+												Line:      2,
 											},
 										},
 									},
@@ -391,7 +398,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/simple/nginx.conf",
+				File:   filepath.Join("testdata", "simple", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -442,7 +449,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/simple/nginx.conf",
+				File:   filepath.Join("testdata", "simple", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -461,7 +468,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/with-comments/nginx.conf",
+				File:   filepath.Join("testdata", "with-comments", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -546,7 +553,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/with-comments/nginx.conf",
+				File:   filepath.Join("testdata", "with-comments", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -606,19 +613,25 @@ var parseFixtures = []parseFixture{
 		Status: "failed",
 		Errors: []PayloadError{
 			PayloadError{
-				File:  "../test/testdata/spelling-mistake/nginx.conf",
-				Error: `unknown directive "proxy_passs" in ../test/testdata/spelling-mistake/nginx.conf:7`,
-				Line:  pInt(7),
+				File: filepath.Join("testdata", "spelling-mistake", "nginx.conf"),
+				Error: fmt.Sprintf(
+					`unknown directive "proxy_passs" in %s:7`,
+					filepath.Join("testdata", "spelling-mistake", "nginx.conf"),
+				),
+				Line: pInt(7),
 			},
 		},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/spelling-mistake/nginx.conf",
+				File:   filepath.Join("testdata", "spelling-mistake", "nginx.conf"),
 				Status: "failed",
 				Errors: []ConfigError{
 					ConfigError{
-						Error: `unknown directive "proxy_passs" in ../test/testdata/spelling-mistake/nginx.conf:7`,
-						Line:  pInt(7),
+						Error: fmt.Sprintf(
+							`unknown directive "proxy_passs" in %s:7`,
+							filepath.Join("testdata", "spelling-mistake", "nginx.conf"),
+						),
+						Line: pInt(7),
 					},
 				},
 				Parsed: []Directive{
@@ -663,19 +676,25 @@ var parseFixtures = []parseFixture{
 		Status: "failed",
 		Errors: []PayloadError{
 			PayloadError{
-				File:  "../test/testdata/missing-semicolon-above/nginx.conf",
-				Error: "directive \"proxy_pass\" is not terminated by \";\" in ../test/testdata/missing-semicolon-above/nginx.conf:4",
-				Line:  pInt(4),
+				File: filepath.Join("testdata", "missing-semicolon-above", "nginx.conf"),
+				Error: fmt.Sprintf(
+					`directive "proxy_pass" is not terminated by ";" in %s:4`,
+					filepath.Join("testdata", "missing-semicolon-above", "nginx.conf"),
+				),
+				Line: pInt(4),
 			},
 		},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/missing-semicolon-above/nginx.conf",
+				File:   filepath.Join("testdata", "missing-semicolon-above", "nginx.conf"),
 				Status: "failed",
 				Errors: []ConfigError{
 					ConfigError{
-						Error: "directive \"proxy_pass\" is not terminated by \";\" in ../test/testdata/missing-semicolon-above/nginx.conf:4",
-						Line:  pInt(4),
+						Error: fmt.Sprintf(
+							`directive "proxy_pass" is not terminated by ";" in %s:4`,
+							filepath.Join("testdata", "missing-semicolon-above", "nginx.conf"),
+						),
+						Line: pInt(4),
 					},
 				},
 				Parsed: []Directive{
@@ -719,19 +738,25 @@ var parseFixtures = []parseFixture{
 		Status: "failed",
 		Errors: []PayloadError{
 			PayloadError{
-				File:  "../test/testdata/missing-semicolon-below/nginx.conf",
-				Error: "directive \"proxy_pass\" is not terminated by \";\" in ../test/testdata/missing-semicolon-below/nginx.conf:7",
-				Line:  pInt(7),
+				File: filepath.Join("testdata", "missing-semicolon-below", "nginx.conf"),
+				Error: fmt.Sprintf(
+					`directive "proxy_pass" is not terminated by ";" in %s:7`,
+					filepath.Join("testdata", "missing-semicolon-below", "nginx.conf"),
+				),
+				Line: pInt(7),
 			},
 		},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/missing-semicolon-below/nginx.conf",
+				File:   filepath.Join("testdata", "missing-semicolon-below", "nginx.conf"),
 				Status: "failed",
 				Errors: []ConfigError{
 					ConfigError{
-						Error: "directive \"proxy_pass\" is not terminated by \";\" in ../test/testdata/missing-semicolon-below/nginx.conf:7",
-						Line:  pInt(7),
+						Error: fmt.Sprintf(
+							`directive "proxy_pass" is not terminated by ";" in %s:7`,
+							filepath.Join("testdata", "missing-semicolon-below", "nginx.conf"),
+						),
+						Line: pInt(7),
 					},
 				},
 				Parsed: []Directive{
@@ -776,7 +801,7 @@ var parseFixtures = []parseFixture{
 		Errors: []PayloadError{},
 		Config: []Config{
 			Config{
-				File:   "../test/testdata/comments-between-args/nginx.conf",
+				File:   filepath.Join("testdata", "comments-between-args", "nginx.conf"),
 				Status: "ok",
 				Errors: []ConfigError{},
 				Parsed: []Directive{
@@ -831,15 +856,15 @@ var parseFixtures = []parseFixture{
 func TestParse(t *testing.T) {
 	for _, fixture := range parseFixtures {
 		t.Run(fixture.name+fixture.suffix, func(t *testing.T) {
-			path := filepath.Join("../test/testdata", fixture.name, "nginx.conf")
+			path := filepath.Join("testdata", fixture.name, "nginx.conf")
 			payload, err := Parse(path, &fixture.options)
 			if err != nil {
-				log.Fatal(err)
+				t.Fatal(err)
 			}
 			b1, _ := json.Marshal(fixture.expected)
 			b2, _ := json.Marshal(payload)
 			if string(b1) != string(b2) {
-				log.Fatalf("expected: %s\nbut got: %s", b1, b2)
+				t.Fatalf("expected: %s\nbut got: %s", b1, b2)
 			}
 		})
 	}

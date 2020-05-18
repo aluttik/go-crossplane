@@ -25,6 +25,7 @@ func Lex(reader io.Reader) chan Token {
 
 func balanceBraces(tokens chan Token) chan Token {
 	c := make(chan Token)
+
 	go func() {
 		depth := 0
 		line := 0
@@ -60,9 +61,9 @@ func balanceBraces(tokens chan Token) chan Token {
 			}
 		}
 
-		// fmt.Println("Closing balanceBraces channel!!!")
 		close(c)
 	}()
+
 	return c
 }
 
@@ -74,7 +75,7 @@ func lex(reader io.Reader) chan Token {
 		var token string
 		var tokenLine int
 
-		it := lineCount(escape(readChars(reader)))
+		it := lineCount(escapeChars(readChars(reader)))
 
 		for cl := range it {
 			// handle whitespace
@@ -170,7 +171,6 @@ func lex(reader io.Reader) chan Token {
 			c <- Token{Value: token, Line: tokenLine, IsQuoted: false}
 		}
 
-		// fmt.Println("Closing lex channel!!!")
 		close(c)
 	}()
 
@@ -179,15 +179,16 @@ func lex(reader io.Reader) chan Token {
 
 func readChars(reader io.Reader) chan string {
 	c := make(chan string)
+
 	go func() {
 		scanner := bufio.NewScanner(reader)
 		scanner.Split(bufio.ScanRunes)
 		for scanner.Scan() {
 			c <- scanner.Text()
 		}
-		// fmt.Println("Closing readChars channel!!!")
 		close(c)
 	}()
+
 	return c
 }
 
@@ -202,14 +203,13 @@ func lineCount(chars chan string) chan charLine {
 			}
 			c <- charLine{char: char, line: line}
 		}
-		// fmt.Println("Closing lineCount channel!!!")
 		close(c)
 	}()
 
 	return c
 }
 
-func escape(chars chan string) chan string {
+func escapeChars(chars chan string) chan string {
 	c := make(chan string)
 
 	go func() {
@@ -219,7 +219,6 @@ func escape(chars chan string) chan string {
 			}
 			c <- char
 		}
-		// fmt.Println("Closing escape channel!!!")
 		close(c)
 	}()
 
