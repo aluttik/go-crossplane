@@ -25,7 +25,7 @@ func TestAnalyze(t *testing.T) {
 		}
 		for _, ctx := range goodCtxs {
 			if err := analyze(fname, stmt, ";", ctx, &ParseOptions{}); err != nil {
-				t.Fatalf("expected err to be nil: %w", err)
+				t.Fatalf("expected err to be nil: %v", err)
 			}
 		}
 		goodMap := map[string]bool{}
@@ -38,9 +38,9 @@ func TestAnalyze(t *testing.T) {
 			if _, ok := goodMap[key]; !ok {
 				ctx := blockCtx(strings.Split(key, ">"))
 				if err := analyze(fname, stmt, ";", ctx, &ParseOptions{}); err == nil {
-					t.Fatalf("expected error to not be nil: %w", err)
+					t.Fatalf("expected error to not be nil: %v", err)
 				} else if e, ok := err.(ParseError); !ok {
-					t.Fatalf("error was not a ParseError: %w", err)
+					t.Fatalf("error was not a ParseError: %v", err)
 				} else if !strings.HasSuffix(e.what, `directive is not allowed here`) {
 					t.Fatalf("unexpected error message: %q", e.what)
 				}
@@ -59,7 +59,7 @@ func TestAnalyze(t *testing.T) {
 		for _, args := range goodArgs {
 			stmt.Args = args
 			if err := analyze(fname, stmt, ";", ctx, &ParseOptions{}); err != nil {
-				t.Fatalf("expected err to be nil: %w", err)
+				t.Fatalf("expected err to be nil: %v", err)
 			}
 		}
 
@@ -67,9 +67,9 @@ func TestAnalyze(t *testing.T) {
 		for _, args := range badArgs {
 			stmt.Args = args
 			if err := analyze(fname, stmt, ";", ctx, &ParseOptions{}); err == nil {
-				t.Fatalf("expected error to not be nil: %w", err)
+				t.Fatalf("expected error to not be nil: %v", err)
 			} else if e, ok := err.(ParseError); !ok {
-				t.Fatalf("error was not a ParseError: %w", err)
+				t.Fatalf("error was not a ParseError: %v", err)
 			} else if !strings.HasSuffix(e.what, `it must be "on" or "off"`) {
 				t.Fatalf("unexpected error message: %q", e.what)
 			}
