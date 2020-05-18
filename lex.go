@@ -217,8 +217,8 @@ func escapeChars(chars chan string) chan string {
 			if char == "\\" {
 				char += <-chars
 			}
-			// Skip escaped carriage return characters.
-			if char == "\\\r" {
+			// Skip carriage return characters.
+			if char == "\r" || char == "\\\r" {
 				continue
 			}
 			c <- char
