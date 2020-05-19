@@ -1,354 +1,501 @@
-package crossplane_test
+package crossplane
 
-/*
-def test_build_nested_and_multiple_args():
-    payload = [
-        {
-            "directive": "events",
-            "args": [],
-            "block": [
-                {
-                    "directive": "worker_connections",
-                    "args": ["1024"]
-                }
-            ]
-        },
-        {
-            "directive": "http",
-            "args": [],
-            "block": [
-                {
-                    "directive": "server",
-                    "args": [],
-                    "block": [
-                        {
-                            "directive": "listen",
-                            "args": ["127.0.0.1:8080"]
-                        },
-                        {
-                            "directive": "server_name",
-                            "args": ["default_server"]
-                        },
-                        {
-                            "directive": "location",
-                            "args": ["/"],
-                            "block": [
-                                {
-                                    "directive": "return",
-                                    "args": ["200", "foo bar baz"]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
-    built = crossplane.build(payload, indent=4, tabs=False)
-    assert built == '\n'.join([
-        'events {',
-        '    worker_connections 1024;',
-        '}',
-        'http {',
-        '    server {',
-        '        listen 127.0.0.1:8080;',
-        '        server_name default_server;',
-        '        location / {',
-        "            return 200 'foo bar baz';",
-        '        }',
-        '    }',
-        '}'
-    ])
+import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
+type buildFixture struct {
+	name     string
+	options  BuildOptions
+	parsed   []Directive
+	expected string
+}
 
-def test_build_with_comments():
-    payload = [
-        {
-            "directive": "events",
-            "line": 1,
-            "args": [],
-            "block": [
-                {
-                    "directive": "worker_connections",
-                    "line": 2,
-                    "args": ["1024"]
-                }
-            ]
-        },
-        {
-            "directive": "#",
-            "line": 4,
-            "args": [],
-            "comment": "comment"
-        },
-        {
-            "directive": "http",
-            "line": 5,
-            "args": [],
-            "block": [
-                {
-                    "directive": "server",
-                    "line": 6,
-                    "args": [],
-                    "block": [
-                        {
-                            "directive": "listen",
-                            "line": 7,
-                            "args": ["127.0.0.1:8080"]
-                        },
-                        {
-                            "directive": "#",
-                            "line": 7,
-                            "args": [],
-                            "comment": "listen"
-                        },
-                        {
-                            "directive": "server_name",
-                            "line": 8,
-                            "args": ["default_server"]
-                        },
-                        {
-                            "directive": "location",
-                            "line": 9,
-                            "args": ["/"],
-                            "block": [
-                                {
-                                    "directive": "#",
-                                    "line": 9,
-                                    "args": [],
-                                    "comment": "# this is brace"
-                                },
-                                {
-                                    "directive": "#",
-                                    "line": 10,
-                                    "args": [],
-                                    "comment": " location /"
-                                },
-                                {
-                                    "directive": "#",
-                                    "line": 11,
-                                    "args": [],
-                                    "comment": " is here"
-                                },
-                                {
-                                    "directive": "return",
-                                    "line": 12,
-                                    "args": ["200", "foo bar baz"]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
-    built = crossplane.build(payload, indent=4, tabs=False)
-    assert built == '\n'.join([
-        'events {',
-        '    worker_connections 1024;',
-        '}',
-        '#comment',
-        'http {',
-        '    server {',
-        '        listen 127.0.0.1:8080; #listen',
-        '        server_name default_server;',
-        '        location / { ## this is brace',
-        '            # location /',
-        '            # is here',
-        "            return 200 'foo bar baz';",
-        '        }',
-        '    }',
-        '}'
-    ])
+type buildFilesFixture struct {
+	name     string
+	options  BuildOptions
+	payload  Payload
+	expected string
+}
 
+type compareFixture struct {
+	name    string
+	options ParseOptions
+}
 
-def test_build_starts_with_comments():
-    payload = [
-        {
-            "directive": "#",
-            "line": 1,
-            "args": [],
-            "comment": " foo"
-        },
-        {
-            "directive": "user",
-            "line": 5,
-            "args": ["root"]
-        }
-    ]
-    built = crossplane.build(payload, indent=4, tabs=False)
-    assert built == '# foo\nuser root;'
+var buildFixtures = []buildFixture{
+	buildFixture{
+		name:    "nested-and-multiple-args",
+		options: BuildOptions{},
+		parsed: []Directive{
+			Directive{
+				Directive: "events",
+				Args:      []string{},
+				Block: &[]Directive{
+					Directive{
+						Directive: "worker_connections",
+						Args:      []string{"1024"},
+					},
+				},
+			},
+			Directive{
+				Directive: "http",
+				Args:      []string{},
+				Block: &[]Directive{
+					Directive{
+						Directive: "server",
+						Args:      []string{},
+						Block: &[]Directive{
+							Directive{
+								Directive: "listen",
+								Args:      []string{"127.0.0.1:8080"},
+							},
+							Directive{
+								Directive: "server_name",
+								Args:      []string{"default_server"},
+							},
+							Directive{
+								Directive: "location",
+								Args:      []string{"/"},
+								Block: &[]Directive{
+									Directive{
+										Directive: "return",
+										Args:      []string{"200", "foo bar baz"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: strings.Join([]string{
+			"events {",
+			"    worker_connections 1024;",
+			"}",
+			"http {",
+			"    server {",
+			"        listen 127.0.0.1:8080;",
+			"        server_name default_server;",
+			"        location / {",
+			`            return 200 "foo bar baz";`,
+			"        }",
+			"    }",
+			"}",
+		}, "\n"),
+	},
+	buildFixture{
+		name:    "with-comments",
+		options: BuildOptions{},
+		parsed: []Directive{
+			Directive{
+				Directive: "events",
+				Line:      1,
+				Args:      []string{},
+				Block: &[]Directive{
+					Directive{
+						Directive: "worker_connections",
+						Line:      2,
+						Args:      []string{"1024"},
+					},
+				},
+			},
+			Directive{
+				Directive: "#",
+				Line:      4,
+				Args:      []string{},
+				Comment:   pStr("comment"),
+			},
+			Directive{
+				Directive: "http",
+				Line:      5,
+				Args:      []string{},
+				Block: &[]Directive{
+					Directive{
+						Directive: "server",
+						Line:      6,
+						Args:      []string{},
+						Block: &[]Directive{
+							Directive{
+								Directive: "listen",
+								Line:      7,
+								Args:      []string{"127.0.0.1:8080"},
+							},
+							Directive{
+								Directive: "#",
+								Line:      7,
+								Args:      []string{},
+								Comment:   pStr("listen"),
+							},
+							Directive{
+								Directive: "server_name",
+								Line:      8,
+								Args:      []string{"default_server"},
+							},
+							Directive{
+								Directive: "location",
+								Line:      9,
+								Args:      []string{"/"},
+								Block: &[]Directive{
+									Directive{
+										Directive: "#",
+										Line:      9,
+										Args:      []string{},
+										Comment:   pStr("# this is brace"),
+									},
+									Directive{
+										Directive: "#",
+										Line:      10,
+										Args:      []string{},
+										Comment:   pStr(" location /"),
+									},
+									Directive{
+										Directive: "#",
+										Line:      11,
+										Args:      []string{},
+										Comment:   pStr(" is here"),
+									},
+									Directive{
+										Directive: "return",
+										Line:      12,
+										Args:      []string{"200", "foo bar baz"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		expected: strings.Join([]string{
+			"events {",
+			"    worker_connections 1024;",
+			"}",
+			"#comment",
+			"http {",
+			"    server {",
+			"        listen 127.0.0.1:8080; #listen",
+			"        server_name default_server;",
+			"        location / { ## this is brace",
+			"            # location /",
+			"            # is here",
+			`            return 200 "foo bar baz";`,
+			"        }",
+			"    }",
+			"}",
+		}, "\n"),
+	},
+	buildFixture{
+		name:    "starts-with-comments",
+		options: BuildOptions{},
+		parsed: []Directive{
+			Directive{
+				Directive: "#",
+				Line:      1,
+				Args:      []string{},
+				Comment:   pStr(" foo"),
+			},
+			Directive{
+				Directive: "user",
+				Line:      5,
+				Args:      []string{"root"},
+			},
+		},
+		expected: "# foo\nuser root;",
+	},
+	buildFixture{
+		name:    "with-quoted-unicode",
+		options: BuildOptions{},
+		parsed: []Directive{
+			Directive{
+				Directive: "env",
+				Line:      1,
+				Args:      []string{"русский текст"},
+			},
+		},
+		expected: `env "русский текст";`,
+	},
+	buildFixture{
+		name:    "multiple-comments-on-one-line",
+		options: BuildOptions{},
+		parsed: []Directive{
+			Directive{
+				Directive: "#",
+				Line:      1,
+				Args:      []string{},
+				Comment:   pStr("comment1"),
+			},
+			Directive{
+				Directive: "user",
+				Line:      2,
+				Args:      []string{"root"},
+			},
+			Directive{
+				Directive: "#",
+				Line:      2,
+				Args:      []string{},
+				Comment:   pStr("comment2"),
+			},
+			Directive{
+				Directive: "#",
+				Line:      2,
+				Args:      []string{},
+				Comment:   pStr("comment3"),
+			},
+		},
+		expected: "#comment1\nuser root; #comment2 #comment3",
+	},
+}
 
+func TestBuild(t *testing.T) {
+	for _, fixture := range buildFixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			if err := Build(&buf, Config{Parsed: fixture.parsed}, &fixture.options); err != nil {
+				t.Fatal(err)
+			}
+			got := buf.String()
+			if got != fixture.expected {
+				t.Fatalf("expected: %#v\nbut got: %#v", fixture.expected, got)
+			}
+		})
+	}
+}
 
-def test_build_with_quoted_unicode():
-    payload = [
-        {
-            "directive": "env",
-            "line": 1,
-            "args": ["русский текст"],
-        }
-    ]
-    built = crossplane.build(payload, indent=4, tabs=False)
-    assert built == u"env 'русский текст';"
+var buildFilesFixtures = []buildFilesFixture{
+	buildFilesFixture{
+		name:    "with-missing-status-and-errors",
+		options: BuildOptions{},
+		payload: Payload{
+			Config: []Config{
+				Config{
+					File: "nginx.conf",
+					Parsed: []Directive{
+						Directive{
+							Directive: "user",
+							Line:      1,
+							Args:      []string{"nginx"},
+						},
+					},
+				},
+			},
+		},
+		expected: "user nginx;\n",
+	},
+	buildFilesFixture{
+		name:    "with-unicode",
+		options: BuildOptions{},
+		payload: Payload{
+			Status: "ok",
+			Errors: []PayloadError{},
+			Config: []Config{
+				Config{
+					File:   "nginx.conf",
+					Status: "ok",
+					Errors: []ConfigError{},
+					Parsed: []Directive{
+						Directive{
+							Directive: "user",
+							Line:      1,
+							Args:      []string{"測試"},
+						},
+					},
+				},
+			},
+		},
+		expected: "user 測試;\n",
+	},
+}
 
+func TestBuildFiles(t *testing.T) {
+	for _, fixture := range buildFilesFixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			tmpdir, err := ioutil.TempDir("", "TestBuildFiles-")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(tmpdir)
 
-def test_build_multiple_comments_on_one_line():
-    payload = [
-        {
-            "directive": "#",
-            "line": 1,
-            "args": [],
-            "comment": "comment1"
-        },
-        {
-            "directive": "user",
-            "line": 2,
-            "args": ["root"]
-        },
-        {
-            "directive": "#",
-            "line": 2,
-            "args": [],
-            "comment": "comment2"
-        },
-        {
-            "directive": "#",
-            "line": 2,
-            "args": [],
-            "comment": "comment3"
-        }
-    ]
-    built = crossplane.build(payload, indent=4, tabs=False)
-    assert built == '#comment1\nuser root; #comment2 #comment3'
+			if err = BuildFiles(fixture.payload, tmpdir, &fixture.options); err != nil {
+				t.Fatal(err)
+			}
 
+			content, err := ioutil.ReadFile(filepath.Join(tmpdir, "nginx.conf"))
+			if err != nil {
+				t.Fatal(err)
+			}
 
+			got := string(content)
+			if got != fixture.expected {
+				t.Fatalf("expected: %#v\nbut got: %#v", fixture.expected, got)
+			}
+		})
+	}
+}
 
-def test_build_files_with_missing_status_and_errors(tmpdir):
-    assert len(tmpdir.listdir()) == 0
-    payload = {
-        "config": [
-            {
-                "file": "nginx.conf",
-                "parsed": [
-                    {
-                        "directive": "user",
-                        "line": 1,
-                        "args": ["nginx"],
-                    }
-                ]
-            }
-        ]
-    }
-    crossplane.builder.build_files(payload, dirname=tmpdir.strpath)
-    built_files = tmpdir.listdir()
-    assert len(built_files) == 1
-    assert built_files[0].strpath == os.path.join(tmpdir.strpath, 'nginx.conf')
-    assert built_files[0].read_text('utf-8') == 'user nginx;\n'
+var compareFixtures = []compareFixture{
+	compareFixture{"simple", ParseOptions{}},
+	compareFixture{"messy", ParseOptions{}},
+	compareFixture{"with-comments", ParseOptions{ParseComments: true}},
+	compareFixture{"empty-value-map", ParseOptions{}},
+	compareFixture{"russian-text", ParseOptions{}},
+	compareFixture{"quoted-right-brace", ParseOptions{}},
+	compareFixture{"directive-with-space", ParseOptions{}},
+}
 
+func TestCompareParsedAndBuilt(t *testing.T) {
+	for _, fixture := range compareFixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			tmpdir, err := ioutil.TempDir("", "TestCompareParsedAndBuilt-")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(tmpdir)
 
-def test_build_files_with_unicode(tmpdir):
-    assert len(tmpdir.listdir()) == 0
-    payload = {
-        "status": "ok",
-        "errors": [],
-        "config": [
-            {
-                "file": "nginx.conf",
-                "status": "ok",
-                "errors": [],
-                "parsed": [
-                    {
-                        "directive": "user",
-                        "line": 1,
-                        "args": [u"測試"],
-                    }
-                ]
-            }
-        ]
-    }
-    crossplane.builder.build_files(payload, dirname=tmpdir.strpath)
-    built_files = tmpdir.listdir()
-    assert len(built_files) == 1
-    assert built_files[0].strpath == os.path.join(tmpdir.strpath, 'nginx.conf')
-    assert built_files[0].read_text('utf-8') == u'user 測試;\n'
+			origPayload, err := Parse(filepath.Join("testdata", fixture.name, "nginx.conf"), &fixture.options)
+			if err != nil {
+				t.Fatal(err)
+			}
 
+			var build1Buffer bytes.Buffer
+			if err := Build(&build1Buffer, origPayload.Config[0], &BuildOptions{}); err != nil {
+				t.Fatal(err)
+			}
+			build1File := filepath.Join(tmpdir, "build1.conf")
+			build1Config := build1Buffer.Bytes()
+			if err := ioutil.WriteFile(build1File, build1Config, os.ModePerm); err != nil {
+				t.Fatal(err)
+			}
+			build1Payload, err := Parse(build1File, &fixture.options)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-def test_compare_parsed_and_built_simple(tmpdir):
-    compare_parsed_and_built('simple', 'nginx.conf', tmpdir)
+			if !equalPayloads(*origPayload, *build1Payload) {
+				b1, _ := json.Marshal(origPayload)
+				b2, _ := json.Marshal(build1Payload)
+				if string(b1) != string(b2) {
+					t.Fatalf("expected: %s\nbut got: %s", b1, b2)
+				}
+			}
 
+			var build2Buffer bytes.Buffer
+			if err := Build(&build2Buffer, build1Payload.Config[0], &BuildOptions{}); err != nil {
+				t.Fatal(err)
+			}
+			build2File := filepath.Join(tmpdir, "build2.conf")
+			build2Config := build2Buffer.Bytes()
+			if err := ioutil.WriteFile(build2File, build2Config, os.ModePerm); err != nil {
+				t.Fatal(err)
+			}
+			build2Payload, err := Parse(build2File, &fixture.options)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-def test_compare_parsed_and_built_messy(tmpdir):
-    compare_parsed_and_built('messy', 'nginx.conf', tmpdir)
+			if !equalPayloads(*build1Payload, *build2Payload) {
+				b1, _ := json.Marshal(build1Payload)
+				b2, _ := json.Marshal(build2Payload)
+				if string(b1) != string(b2) {
+					t.Fatalf("expected: %s\nbut got: %s", b1, b2)
+				}
+			}
+		})
+	}
+}
 
+func equalPayloads(p1, p2 Payload) bool {
+	return p1.Status == p2.Status &&
+		equalPayloadErrors(p1.Errors, p2.Errors) &&
+		equalPayloadConfigs(p1.Config, p2.Config)
+}
 
-def test_compare_parsed_and_built_messy_with_comments(tmpdir):
-    compare_parsed_and_built('with-comments', 'nginx.conf', tmpdir, comments=True)
+func equalPayloadErrors(e1, e2 []PayloadError) bool {
+	if len(e1) != len(e2) {
+		return false
+	}
+	for i := 0; i < len(e1); i++ {
+		if e1[i].File != e2[i].File ||
+			e1[i].Error != e2[i].Error ||
+			(e1[i].Line == nil) != (e2[i].Line == nil) ||
+			(e1[i].Line != nil && *e1[i].Line != *e2[i].Line) {
+			return false
+		}
+	}
+	return true
+}
 
+func equalPayloadConfigs(c1, c2 []Config) bool {
+	if len(c1) != len(c2) {
+		return false
+	}
+	for i := 0; i < len(c1); i++ {
+		if !equalConfigs(c1[i], c2[i]) {
+			return false
+		}
+	}
+	return true
+}
 
-def test_compare_parsed_and_built_empty_map_values(tmpdir):
-    compare_parsed_and_built('empty-value-map', 'nginx.conf', tmpdir)
+func equalConfigs(c1, c2 Config) bool {
+	return c1.Status == c2.Status &&
+		equalConfigErrors(c1.Errors, c2.Errors) &&
+		equalBlocks(c1.Parsed, c2.Parsed)
+}
 
+func equalConfigErrors(e1, e2 []ConfigError) bool {
+	if len(e1) != len(e2) {
+		return false
+	}
+	for i := 0; i < len(e1); i++ {
+		if e1[i].Error != e2[i].Error ||
+			(e1[i].Line == nil) != (e2[i].Line == nil) ||
+			(e1[i].Line != nil && *e1[i].Line != *e2[i].Line) {
+			return false
+		}
+	}
+	return true
+}
 
-def test_compare_parsed_and_built_russian_text(tmpdir):
-    compare_parsed_and_built('russian-text', 'nginx.conf', tmpdir)
+func equalBlocks(b1, b2 []Directive) bool {
+	if len(b1) != len(b2) {
+		return false
+	}
+	for i := 0; i < len(b1); i++ {
+		if !equalDirectives(b1[i], b2[i]) {
+			return false
+		}
+	}
+	return true
+}
 
-
-def test_compare_parsed_and_built_quoted_right_brace(tmpdir):
-    compare_parsed_and_built('quoted-right-brace', 'nginx.conf', tmpdir)
-
-
-def test_compare_parsed_and_built_directive_with_space(tmpdir):
-    compare_parsed_and_built('directive-with-space', 'nginx.conf', tmpdir)
-*/
-
-
-/*
-import os
-
-from crossplane.compat import basestring
-from crossplane.parser import parse
-from crossplane.builder import build, _enquote
-
-here = os.path.dirname(__file__)
-
-
-def assert_equal_payloads(a, b, ignore_keys=()):
-    assert type(a) == type(b)
-    if isinstance(a, list):
-        assert len(a) == len(b)
-        for args in zip(a, b):
-            assert_equal_payloads(*args, ignore_keys=ignore_keys)
-    elif isinstance(a, dict):
-        keys = set(a.keys()) | set(b.keys())
-        keys.difference_update(ignore_keys)
-        for key in keys:
-            assert_equal_payloads(a[key], b[key], ignore_keys=ignore_keys)
-    elif isinstance(a, basestring):
-        assert _enquote(a) == _enquote(b)
-    else:
-        assert a == b
-
-
-def compare_parsed_and_built(conf_dirname, conf_basename, tmpdir, **kwargs):
-    original_dirname = os.path.join(here, 'configs', conf_dirname)
-    original_path = os.path.join(original_dirname, conf_basename)
-    original_payload = parse(original_path, **kwargs)
-    original_parsed = original_payload['config'][0]['parsed']
-
-    build1_config = build(original_parsed)
-    build1_file = tmpdir.join('build1.conf')
-    build1_file.write_text(build1_config, encoding='utf-8')
-    build1_payload = parse(build1_file.strpath, **kwargs)
-    build1_parsed = build1_payload['config'][0]['parsed']
-
-    assert_equal_payloads(original_parsed, build1_parsed, ignore_keys=['line'])
-
-    build2_config = build(build1_parsed)
-    build2_file = tmpdir.join('build2.conf')
-    build2_file.write_text(build2_config, encoding='utf-8')
-    build2_payload = parse(build2_file.strpath, **kwargs)
-    build2_parsed = build2_payload['config'][0]['parsed']
-
-    assert build1_config == build2_config
-    assert_equal_payloads(build1_parsed, build2_parsed, ignore_keys=[])
-*/
+func equalDirectives(d1, d2 Directive) bool {
+	if d1.Directive != d2.Directive ||
+		len(d1.Args) != len(d2.Args) ||
+		(d1.Includes == nil) != (d2.Includes == nil) ||
+		(d1.Block == nil) != (d2.Block == nil) ||
+		(d1.Block != nil && !equalBlocks(*d1.Block, *d2.Block)) ||
+		(d1.Comment == nil) != (d2.Comment == nil) ||
+		(d1.Comment != nil && *d1.Comment != *d2.Comment) {
+		return false
+	}
+	for i := 0; i < len(d1.Args); i++ {
+		if enquote(d1.Args[i]) != enquote(d2.Args[i]) {
+			return false
+		}
+	}
+	if d1.Includes != nil {
+		for i := 0; i < len(*d1.Includes); i++ {
+			if (*d1.Includes)[i] != (*d2.Includes)[i] {
+				return false
+			}
+		}
+	}
+	return true
+}

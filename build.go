@@ -1,8 +1,12 @@
 package crossplane
 
 import (
+	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 type BuildOptions struct {
@@ -11,6 +15,51 @@ type BuildOptions struct {
 	Header bool
 }
 
+// BuildFiles builds all of the config files in a crossplane.Payload and
+// writes them to disk.
+func BuildFiles(payload Payload, dir string, options *BuildOptions) error {
+	if len(dir) == 0 {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		dir = cwd
+	}
+
+	for _, config := range payload.Config {
+		path := config.File
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(dir, path)
+		}
+
+		// make directories that need to be made for the config to be built
+		dirpath := filepath.Dir(path)
+		if err := os.MkdirAll(dirpath, os.ModeDir|os.ModePerm); err != nil {
+			return err
+		}
+
+		// build then create the nginx config file using the json payload
+		var buf bytes.Buffer
+		if err := Build(&buf, config, options); err != nil {
+			return err
+		}
+
+		f, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		output := append(bytes.TrimRightFunc(buf.Bytes(), unicode.IsSpace), '\n')
+		if _, err := f.Write(output); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Build creates an NGINX config from a crossplane.Config.
 func Build(w io.Writer, config Config, options *BuildOptions) error {
 	if options.Indent == 0 {
 		options.Indent = 4
