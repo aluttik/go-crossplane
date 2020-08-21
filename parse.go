@@ -1,12 +1,15 @@
 package crossplane
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 )
+
+var dfltFileOpen = func(path string) (io.Reader, error) { return os.Open(path) }
 
 var hasMagic = regexp.MustCompile(`[*?[]`)
 
@@ -63,6 +66,9 @@ type ParseOptions struct {
 	// function. The results of the callback function will be set in the
 	// PayloadError struct that's added to the Payload struct's Errors array.
 	ErrorCallback func(error) interface{}
+
+	// If specified, use this alternative to open config files
+	Open func(path string) (io.Reader, error)
 }
 
 // Parse parses an NGINX configuration file.
@@ -101,11 +107,16 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 		included:    map[string]int{filename: 0},
 	}
 
+	fileOpen := dfltFileOpen
+	if options.Open != nil {
+		fileOpen = options.Open
+	}
+
 	for len(p.includes) > 0 {
 		incl := p.includes[0]
 		p.includes = p.includes[1:]
 
-		file, err := os.Open(incl.path)
+		file, err := fileOpen(incl.path)
 		if err != nil {
 			return nil, err
 		}
@@ -119,6 +130,9 @@ func Parse(filename string, options *ParseOptions) (*Payload, error) {
 		}
 		parsed, err := p.parse(&config, tokens, incl.ctx, false)
 		if err != nil {
+			if options.StopParsingOnError {
+				return nil, err
+			}
 			handleError(&config, err)
 		} else {
 			config.Parsed = parsed
