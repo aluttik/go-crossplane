@@ -146,14 +146,20 @@ func needsQuotes(s string) bool {
 	var char string
 	chars := escape(s)
 
+	if len(chars) == 0 {
+		return true
+	}
+
 	// arguments can't start with variable expansion syntax
-	char = <-chars
+	char = chars[0]
+	chars = chars[1:]
+
 	if isSpace(char) || char == "{" || char == "}" || char == ";" || char == `"` || char == "'" || char == "${" {
 		return true
 	}
 
 	expanding := false
-	for c := range chars {
+	for _, c := range chars {
 		char = c
 		if isSpace(char) || char == "{" || char == ";" || char == `"` || char == "'" {
 			return true
@@ -167,29 +173,27 @@ func needsQuotes(s string) bool {
 	return expanding || char == "\\" || char == "$"
 }
 
-func escape(s string) chan string {
-	c := make(chan string)
-	go func() {
-		prev, char := "", ""
-		for _, r := range s {
-			char = string(r)
-			if prev == "\\" || prev+char == "${" {
-				prev += char
-				c <- prev
-				continue
-			}
-			if prev == "$" {
-				c <- prev
-			}
-			if char != "\\" && char != "$" {
-				c <- char
-			}
-			prev = char
+func escape(s string) []string {
+	var c []string
+	prev, char := "", ""
+	for _, r := range s {
+		char = string(r)
+		if prev == "\\" || prev+char == "${" {
+			prev += char
+			c = append(c, prev)
+			continue
 		}
-		if char == "\\" || char == "$" {
-			c <- char
+		if prev == "$" {
+			c = append(c, prev)
 		}
-		close(c)
-	}()
+		if char != "\\" && char != "$" {
+			c = append(c, char)
+		}
+		prev = char
+	}
+	if char == "\\" || char == "$" {
+		c = append(c, char)
+	}
+
 	return c
 }
