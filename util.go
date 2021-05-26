@@ -50,6 +50,7 @@ func prepareIfArgs(d Directive) Directive {
 		d.Args[e] = strings.TrimRightFunc(strings.TrimSuffix(d.Args[e], ")"), unicode.IsSpace)
 		if len(d.Args[0]) == 0 {
 			d.Args = d.Args[1:]
+			e -= 1
 		}
 		if len(d.Args[e]) == 0 {
 			d.Args = d.Args[:e]

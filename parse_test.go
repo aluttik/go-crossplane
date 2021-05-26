@@ -454,6 +454,69 @@ var parseFixtures = []parseFixture{
 			},
 		},
 	}},
+	parseFixture{"simple-with-if", "-ignore-directives-1", ParseOptions{IgnoreDirectives: []string{"listen", "server_name"}}, Payload{
+		Status: "ok",
+		Errors: []PayloadError{},
+		Config: []Config{
+			Config{
+				File:   filepath.Join("testdata", "simple-with-if", "nginx.conf"),
+				Status: "ok",
+				Errors: []ConfigError{},
+				Parsed: []Directive{
+					Directive{
+						Directive: "events",
+						Args:      []string{},
+						Line:      1,
+						Block: &[]Directive{
+							Directive{
+								Directive: "worker_connections",
+								Args:      []string{"1024"},
+								Line:      2,
+							},
+						},
+					},
+					Directive{
+						Directive: "http",
+						Args:      []string{},
+						Line:      5,
+						Block: &[]Directive{
+							Directive{
+								Directive: "server",
+								Args:      []string{},
+								Line:      6,
+								Block: &[]Directive{
+									Directive{
+										Directive: "location",
+										Args:      []string{"/"},
+										Line:      10,
+										Block: &[]Directive{
+											Directive{
+												Directive: "if",
+												Args:      []string{"$scheme", "=", "http"},
+												Line:      11,
+												Block: &[]Directive{
+													Directive{
+														Directive: "return",
+														Args:      []string{"200", "foo bar"},
+														Line:      12,
+													},
+												},
+											},
+											Directive{
+												Directive: "return",
+												Args:      []string{"200", "foo bar baz"},
+												Line:      14,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}},
 	parseFixture{"simple", "-ignore-directives-2", ParseOptions{IgnoreDirectives: []string{"events", "server"}}, Payload{
 		Status: "ok",
 		Errors: []PayloadError{},
