@@ -12,14 +12,14 @@ const (
 	ngxConfTake5  = 0x00000020 // 5 args
 	ngxConfTake6  = 0x00000040 // 6 args
 	// ngxConfTake7  = 0x00000080 // 7 args (currently unused)
-	ngxConfBlock  = 0x00000100 // followed by block
-	ngxConfFlag   = 0x00000200 // 'on' or 'off'
-	ngxConfAny    = 0x00000400 // >=0 args
-	ngxConf1More  = 0x00000800 // >=1 args
-	ngxConf2More  = 0x00001000 // >=2 args
+	ngxConfBlock = 0x00000100 // followed by block
+	ngxConfFlag  = 0x00000200 // 'on' or 'off'
+	ngxConfAny   = 0x00000400 // >=0 args
+	ngxConf1More = 0x00000800 // >=1 args
+	ngxConf2More = 0x00001000 // >=2 args
 
 	// some helpful argument style aliases
-	ngxConfTake12   = (ngxConfTake1 | ngxConfTake2)
+	ngxConfTake12 = (ngxConfTake1 | ngxConfTake2)
 	//ngxConfTake13   = (ngxConfTake1 | ngxConfTake3) (currently unused)
 	ngxConfTake23   = (ngxConfTake2 | ngxConfTake3)
 	ngxConfTake34   = (ngxConfTake3 | ngxConfTake4)
@@ -147,7 +147,7 @@ func analyze(fname string, stmt Directive, term string, ctx blockCtx, options *P
 		} else if (mask&ngxConfFlag) != 0 && len(stmt.Args) == 1 && !validFlag(stmt.Args[0]) {
 			what = fmt.Sprintf(`invalid value "%s" in "%s" directive, it must be "on" or "off"`, stmt.Args[0], stmt.Directive)
 		} else {
-			what = fmt.Sprintf(`invalid number of arguments in "%s" directive`, stmt.Directive)
+			what = fmt.Sprintf(`invalid number of arguments in "%s" directive. found %d`, stmt.Directive, len(stmt.Args))
 		}
 	}
 
@@ -167,14 +167,17 @@ func analyze(fname string, stmt Directive, term string, ctx blockCtx, options *P
 //   - which contexts it's allowed to be in
 //
 // Since some directives can have different behaviors in different contexts, we
-//   use lists of bit masks, each describing a valid way to use the directive.
+//
+//	use lists of bit masks, each describing a valid way to use the directive.
 //
 // Definitions for directives that're available in the open source version of
-//   nginx were taken directively from the source code. In fact, the variable
-//   names for the bit masks defined above were taken from the nginx source code.
+//
+//	nginx were taken directively from the source code. In fact, the variable
+//	names for the bit masks defined above were taken from the nginx source code.
 //
 // Definitions for directives that're only available for nginx+ were inferred
-//   from the documentation at http://nginx.org/en/docs/.
+//
+//	from the documentation at http://nginx.org/en/docs/.
 var directives = map[string][]int{
 	"absolute_redirect": []int{
 		ngxHttpMainConf | ngxHttpSrvConf | ngxHttpLocConf | ngxConfFlag,
