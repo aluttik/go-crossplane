@@ -1,6 +1,7 @@
 package crossplane
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -69,6 +70,9 @@ type ParseOptions struct {
 
 	// If specified, use this alternative to open config files
 	Open func(path string) (io.Reader, error)
+
+	// If true, dump copious debugging output for tracing the parsing process.
+	Debug bool
 }
 
 // Parse parses an NGINX configuration file.
@@ -154,6 +158,10 @@ func (p *parser) parse(parsing *Config, tokens chan ngxToken, ctx blockCtx, cons
 
 	// parse recursively by pulling from a flat stream of tokens
 	for t := range tokens {
+		if p.options.Debug {
+			fmt.Printf("t (top) Value = '%s', IsQuoted = '%v', Error = '%v'\n", t.Value, t.IsQuoted, t.Error)
+		}
+
 		if t.Error != nil {
 			return nil, t.Error
 		}
@@ -196,12 +204,19 @@ func (p *parser) parse(parsing *Config, tokens chan ngxToken, ctx blockCtx, cons
 		// parse arguments by reading tokens
 		t = <-tokens
 		for t.IsQuoted || (t.Value != "{" && t.Value != ";" && t.Value != "}") {
+			if p.options.Debug {
+				fmt.Printf("t (args) Value = '%s', IsQuoted = '%v', Error = '%v'\n", t.Value, t.IsQuoted, t.Error)
+			}
+
 			if strings.HasPrefix(t.Value, "#") && !t.IsQuoted {
 				commentsInArgs = append(commentsInArgs, t.Value[1:])
 			} else {
 				stmt.Args = append(stmt.Args, t.Value)
 			}
 			t = <-tokens
+		}
+		if p.options.Debug {
+			fmt.Printf("t (after args) Value = '%s', IsQuoted = '%v', Error = '%v'\n", t.Value, t.IsQuoted, t.Error)
 		}
 
 		// consume the directive if it is ignored and move on
@@ -287,12 +302,32 @@ func (p *parser) parse(parsing *Config, tokens chan ngxToken, ctx blockCtx, cons
 
 		// if this statement terminated with "{" then it is a block
 		if t.Value == "{" && !t.IsQuoted {
-			inner := enterBlockCtx(stmt, ctx) // get context for block
-			block, err := p.parse(parsing, tokens, inner, false)
-			if err != nil {
-				return nil, err
+			if p.options.Debug {
+				fmt.Println("recurse")
 			}
-			stmt.Block = &block
+			inner := enterBlockCtx(stmt, ctx) // get context for block
+
+			if strings.HasSuffix(stmt.Directive, "_by_lua_block") {
+				// Just consume the lua block contents for now:
+				if p.options.Debug {
+					fmt.Println("consume")
+				}
+				_, _ = p.parse(parsing, tokens, inner, true)
+
+			} else {
+				if p.options.Debug {
+					fmt.Println("parse")
+				}
+				block, err := p.parse(parsing, tokens, inner, false)
+				if err != nil {
+					return nil, err
+				}
+				stmt.Block = &block
+			}
+			if p.options.Debug {
+				fmt.Println("recurse pop")
+			}
+
 		}
 
 		parsed = append(parsed, stmt)

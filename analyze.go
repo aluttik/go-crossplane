@@ -12,14 +12,14 @@ const (
 	ngxConfTake5  = 0x00000020 // 5 args
 	ngxConfTake6  = 0x00000040 // 6 args
 	// ngxConfTake7  = 0x00000080 // 7 args (currently unused)
-	ngxConfBlock  = 0x00000100 // followed by block
-	ngxConfFlag   = 0x00000200 // 'on' or 'off'
-	ngxConfAny    = 0x00000400 // >=0 args
-	ngxConf1More  = 0x00000800 // >=1 args
-	ngxConf2More  = 0x00001000 // >=2 args
+	ngxConfBlock = 0x00000100 // followed by block
+	ngxConfFlag  = 0x00000200 // 'on' or 'off'
+	ngxConfAny   = 0x00000400 // >=0 args
+	ngxConf1More = 0x00000800 // >=1 args
+	ngxConf2More = 0x00001000 // >=2 args
 
 	// some helpful argument style aliases
-	ngxConfTake12   = (ngxConfTake1 | ngxConfTake2)
+	ngxConfTake12 = (ngxConfTake1 | ngxConfTake2)
 	//ngxConfTake13   = (ngxConfTake1 | ngxConfTake3) (currently unused)
 	ngxConfTake23   = (ngxConfTake2 | ngxConfTake3)
 	ngxConfTake34   = (ngxConfTake3 | ngxConfTake4)
@@ -27,21 +27,22 @@ const (
 	ngxConfTake1234 = (ngxConfTake123 | ngxConfTake4)
 
 	// bit masks for different directive locations
-	ngxDirectConf     = 0x00010000 // main file (not used)
-	ngxMainConf       = 0x00040000 // main context
-	ngxEventConf      = 0x00080000 // events
-	ngxMailMainConf   = 0x00100000 // mail
-	ngxMailSrvConf    = 0x00200000 // mail > server
-	ngxStreamMainConf = 0x00400000 // stream
-	ngxStreamSrvConf  = 0x00800000 // stream > server
-	ngxStreamUpsConf  = 0x01000000 // stream > upstream
-	ngxHttpMainConf   = 0x02000000 // http
-	ngxHttpSrvConf    = 0x04000000 // http > server
-	ngxHttpLocConf    = 0x08000000 // http > location
-	ngxHttpUpsConf    = 0x10000000 // http > upstream
-	ngxHttpSifConf    = 0x20000000 // http > server > if
-	ngxHttpLifConf    = 0x40000000 // http > location > if
-	ngxHttpLmtConf    = 0x80000000 // http > location > limit_except
+	ngxDirectConf        = 0x000010000 // main file (not used)
+	ngxMainConf          = 0x000040000 // main context
+	ngxEventConf         = 0x000080000 // events
+	ngxMailMainConf      = 0x000100000 // mail
+	ngxMailSrvConf       = 0x000200000 // mail > server
+	ngxStreamMainConf    = 0x000400000 // stream
+	ngxStreamSrvConf     = 0x000800000 // stream > server
+	ngxStreamUpsConf     = 0x001000000 // stream > upstream
+	ngxHttpMainConf      = 0x002000000 // http
+	ngxHttpSrvConf       = 0x004000000 // http > server
+	ngxHttpLocConf       = 0x008000000 // http > location
+	ngxHttpUpsConf       = 0x010000000 // http > upstream
+	ngxHttpSifConf       = 0x020000000 // http > server > if
+	ngxHttpLifConf       = 0x040000000 // http > location > if
+	ngxHttpLmtConf       = 0x080000000 // http > location > limit_except
+	ngxHttpSrvLocLuaConf = 0x100000000 // http > location > access_by_lua_block
 )
 
 // helpful directive location alias describing "any" context
@@ -52,20 +53,21 @@ const ngxAnyConf = (ngxMainConf | ngxEventConf | ngxMailMainConf | ngxMailSrvCon
 
 // map for getting bitmasks from certain context tuples
 var contexts = map[string]int{
-	blockCtx{}.key():                                   ngxMainConf,
-	blockCtx{"events"}.key():                           ngxEventConf,
-	blockCtx{"mail"}.key():                             ngxMailMainConf,
-	blockCtx{"mail", "server"}.key():                   ngxMailSrvConf,
-	blockCtx{"stream"}.key():                           ngxStreamMainConf,
-	blockCtx{"stream", "server"}.key():                 ngxStreamSrvConf,
-	blockCtx{"stream", "upstream"}.key():               ngxStreamUpsConf,
-	blockCtx{"http"}.key():                             ngxHttpMainConf,
-	blockCtx{"http", "server"}.key():                   ngxHttpSrvConf,
-	blockCtx{"http", "location"}.key():                 ngxHttpLocConf,
-	blockCtx{"http", "upstream"}.key():                 ngxHttpUpsConf,
-	blockCtx{"http", "server", "if"}.key():             ngxHttpSifConf,
-	blockCtx{"http", "location", "if"}.key():           ngxHttpLifConf,
-	blockCtx{"http", "location", "limit_except"}.key(): ngxHttpLmtConf,
+	blockCtx{}.key():                                          ngxMainConf,
+	blockCtx{"events"}.key():                                  ngxEventConf,
+	blockCtx{"mail"}.key():                                    ngxMailMainConf,
+	blockCtx{"mail", "server"}.key():                          ngxMailSrvConf,
+	blockCtx{"stream"}.key():                                  ngxStreamMainConf,
+	blockCtx{"stream", "server"}.key():                        ngxStreamSrvConf,
+	blockCtx{"stream", "upstream"}.key():                      ngxStreamUpsConf,
+	blockCtx{"http"}.key():                                    ngxHttpMainConf,
+	blockCtx{"http", "server"}.key():                          ngxHttpSrvConf,
+	blockCtx{"http", "location"}.key():                        ngxHttpLocConf,
+	blockCtx{"http", "upstream"}.key():                        ngxHttpUpsConf,
+	blockCtx{"http", "server", "if"}.key():                    ngxHttpSifConf,
+	blockCtx{"http", "location", "if"}.key():                  ngxHttpLifConf,
+	blockCtx{"http", "location", "limit_except"}.key():        ngxHttpLmtConf,
+	blockCtx{"http", "location", "access_by_lua_block"}.key(): ngxHttpSrvLocLuaConf,
 }
 
 func enterBlockCtx(stmt Directive, ctx blockCtx) blockCtx {
@@ -108,7 +110,7 @@ func analyze(fname string, stmt Directive, term string, ctx blockCtx, options *P
 		}
 		if len(ctxMasks) == 0 {
 			return ParseError{
-				what: fmt.Sprintf(`"%s" directive is not allowed here`, stmt.Directive),
+				what: fmt.Sprintf(`"%s" directive is not allowed here (current = %0x)`, stmt.Directive, currCtx),
 				file: &fname,
 				line: &stmt.Line,
 			}
@@ -147,7 +149,7 @@ func analyze(fname string, stmt Directive, term string, ctx blockCtx, options *P
 		} else if (mask&ngxConfFlag) != 0 && len(stmt.Args) == 1 && !validFlag(stmt.Args[0]) {
 			what = fmt.Sprintf(`invalid value "%s" in "%s" directive, it must be "on" or "off"`, stmt.Args[0], stmt.Directive)
 		} else {
-			what = fmt.Sprintf(`invalid number of arguments in "%s" directive`, stmt.Directive)
+			what = fmt.Sprintf(`invalid number of arguments in "%s" directive. found %d`, stmt.Directive, len(stmt.Args))
 		}
 	}
 
@@ -167,17 +169,23 @@ func analyze(fname string, stmt Directive, term string, ctx blockCtx, options *P
 //   - which contexts it's allowed to be in
 //
 // Since some directives can have different behaviors in different contexts, we
-//   use lists of bit masks, each describing a valid way to use the directive.
+//
+//	use lists of bit masks, each describing a valid way to use the directive.
 //
 // Definitions for directives that're available in the open source version of
-//   nginx were taken directively from the source code. In fact, the variable
-//   names for the bit masks defined above were taken from the nginx source code.
+//
+//	nginx were taken directively from the source code. In fact, the variable
+//	names for the bit masks defined above were taken from the nginx source code.
 //
 // Definitions for directives that're only available for nginx+ were inferred
-//   from the documentation at http://nginx.org/en/docs/.
+//
+//	from the documentation at http://nginx.org/en/docs/.
 var directives = map[string][]int{
 	"absolute_redirect": []int{
 		ngxHttpMainConf | ngxHttpSrvConf | ngxHttpLocConf | ngxConfFlag,
+	},
+	"access_by_lua_block": []int{
+		ngxHttpLocConf | ngxConfBlock | ngxConfNoArgs,
 	},
 	"accept_mutex": []int{
 		ngxEventConf | ngxConfFlag,

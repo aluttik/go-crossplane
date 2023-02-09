@@ -41,7 +41,7 @@ func TestAnalyze(t *testing.T) {
 					t.Fatalf("expected error to not be nil: %v", err)
 				} else if e, ok := err.(ParseError); !ok {
 					t.Fatalf("error was not a ParseError: %v", err)
-				} else if !strings.HasSuffix(e.what, `directive is not allowed here`) {
+				} else if !strings.Contains(e.what, `directive is not allowed here`) {
 					t.Fatalf("unexpected error message: %q", e.what)
 				}
 			}
